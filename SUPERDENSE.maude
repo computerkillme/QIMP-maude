@@ -1,0 +1,56 @@
+mod QIMP-SUPERDENSE is
+  --- 首先导入我们在前面八大模块中常用到的 QIMP-COMMAND, QIMP-OP 等
+  protecting QIMP-COMMAND .
+  protecting QIMP-OP .
+  protecting QIMP-EXPR .
+  protecting QIMP-HYBRID .
+
+  --- 声明若干变量，用于命令的执行
+  vars HS : HybridState .
+  var X Y : Qid .
+
+  --- 如果之前还没有在别处声明 cnot(...)、h(...) 等命令，可在此重复声明
+  ---
+  --- 但若你已经在 “QIMP-TELEPORTATION” 等模块里声明过 cnot/h，这里可以省略。
+  ---
+  op cnot : Qid Qid -> Command [ctor] .
+  eq [exec-cnot] : execute(program(cnot(X, Y)), HS)
+    = hybridState(
+        getCState(HS),
+        applyCNOT(getQState(HS), X, Y)
+      ) .
+
+  op h : Qid -> Command [ctor] .
+  eq [exec-h] : execute(program(h(X)), HS)
+    = hybridState(
+        getCState(HS),
+        applyH(getQState(HS), X)
+      ) .
+
+  --- 声明 c3、c4 供后续测量结果使用
+  op c3 c4 : -> Qid [ctor] .
+
+  ---
+  --- 定义“superdense(qA, qB, c1, c2)”命令：
+  --- 假设 c1, c2 是 Alice 想要发送的两个经典位，且 (qA,qB) 是事先共享的 EPR 对
+  --- 协议流程：
+  ---   1) 若 c1=1 => (qA :=Q Z)；  若 c2=1 => (qA :=Q X)
+  ---   2) Bob 做 cnot(qA, qB)； h(qA)
+  ---   3) 测量 qA, qB 分别得到 c3, c4
+  ---
+  op superdense : Qid Qid Qid Qid -> Command [ctor] .
+  eq superdense(qA, qB, c1, c2) =
+    (
+      --- Alice编码：根据 c1,c2 的值对 qA 做 Z/X
+      if (var(c1) eqA const(1)) then (qA :=Q Z) else skip fi
+    ; if (var(c2) eqA const(1)) then (qA :=Q X) else skip fi
+
+      --- Bob解码：在 qA,qB 上执行 CNOT, H
+    ; cnot(qA, qB)
+    ; h(qA)
+
+      --- 测量 qA, qB => 分别存入 c3, c4
+    ; (c3 :=measure qA)
+    ; (c4 :=measure qB)
+    ) .
+endm

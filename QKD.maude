@@ -1,0 +1,48 @@
+mod QIMP-BB84 is
+  protecting QIMP-COMMAND .
+  protecting QIMP-OP .
+  protecting QIMP-EXPR .
+  protecting QIMP-HYBRID .
+
+  vars HS : HybridState .
+  var qA : Qid .    --- 表示 Alice 持有的量子比特
+  var cABit cABasis cBBasis c3 cKey : Qid [ctor] .
+  --- cABit, cABasis 表示 Alice 的经典位与基；cBBasis 表示 Bob 的基
+  --- c3 用来存 Bob 的测量结果，cKey 可用来存最终的一位密钥
+
+  ----------------------------------------------------------------
+  --- 新增命令: h(...)、cnot(...)、等你若已在 teleportation 里声明过，可省略
+  --- 以下为了示例完整性，仍然写出
+  ----------------------------------------------------------------
+  op h : Qid -> Command [ctor] .
+  eq [exec-h] : execute(program(h(qA)), HS)
+    = hybridState(
+        getCState(HS),
+        applyH(getQState(HS), qA)
+      ) .
+
+  --- 示例：对1回合BB84进行编程
+  --- bb84Round(qA, cABit, cABasis, cBBasis, cKey) 
+  ---
+  --- 流程：
+  ---   1) Alice编码： 若 cABit==1 => (qA :=Q X) ; 若 cABasis==1 => (qA :=Q H)
+  ---   2) Bob解码：   若 cBBasis==1 => (qA :=Q H) ; 然后 (c3 :=measure qA)
+  ---   3) 如果AB基相同 => (cKey := var(c3)) 否则跳过
+  ----------------------------------------------------------------
+  op bb84Round : Qid Qid Qid Qid Qid -> Command [ctor] .
+
+  eq bb84Round(qA, cABit, cABasis, cBBasis, cKey)
+    = (
+        --- 1) Alice 编码
+        if (var(cABit) eqA const(1)) then (qA :=Q X) else skip fi
+      ; if (var(cABasis) eqA const(1)) then (qA :=Q H) else skip fi
+
+        --- 2) Bob 解码
+      ; if (var(cBBasis) eqA const(1)) then (qA :=Q H) else skip fi
+      ; (c3 :=measure qA)
+
+        --- 3) 比较基，相同则把 c3 存为新密钥位
+      ; if (var(cABasis) eqA var(cBBasis)) then (cKey := var(c3)) else skip fi
+      ) .
+
+endm
