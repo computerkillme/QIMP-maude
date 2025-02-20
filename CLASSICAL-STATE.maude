@@ -1,0 +1,33 @@
+fmod CLASSICAL-STATE is
+  pr QID .   --- 变量 ID
+  pr INT .   --- 整数类型
+
+  sort CState .  --- 经典状态
+
+  --- 空状态
+  op emptyCState : -> CState [ctor] .
+
+  --- 经典状态存储变量 X -> N
+  op store : Qid Int CState -> CState [ctor] .
+
+  --- 经典状态更新
+  op updateCState : CState Qid Int -> CState .
+
+  --- 获取变量值
+  op getCState : CState Qid -> Int .
+
+  --- 声明变量
+  vars X Y : Qid .
+  vars N M : Int .
+  var CS : CState .
+
+  --- 如果变量 `X` 已存在，更新它
+  ceq updateCState(store(X, M, CS), X, N) = store(X, N, CS) if M =/= N .
+
+  --- 如果变量 `X` 不存在，存入
+  eq updateCState(CS, X, N) = store(X, N, CS) [owise] .
+
+  --- 获取变量值
+  ceq getCState(store(X, N, CS), X) = N if true .
+  eq getCState(CS, X) = 0 [owise] .
+endfm

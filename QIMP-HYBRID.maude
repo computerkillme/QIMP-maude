@@ -1,0 +1,21 @@
+mod QIMP-HYBRID is
+  pr QIMP-QUBIT .
+  pr SYMBOLIC-REASONING .
+  pr CLASSICAL-STATE .
+  pr MATRIX .
+
+  --- 经典-量子混合状态
+  sort HybridState .
+  op hybridState : CState Qubit -> HybridState [ctor] .
+
+  --- 提供投影函数，确保 `HybridState` 可解析
+  op getCState : HybridState -> CState .
+  op getQState : HybridState -> Qubit .
+
+  eq getCState(hybridState(CS, QS)) = CS .
+  eq getQState(hybridState(CS, QS)) = QS .
+
+  vars CS : CState .
+  var QS : Qubit .
+
+endm

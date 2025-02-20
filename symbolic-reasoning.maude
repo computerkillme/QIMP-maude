@@ -1,0 +1,653 @@
+fmod QUBIT is
+    pr MATRIX .
+    pr NAT-LIST .
+
+    sorts OneQubit EnQubit Qubit .
+    subsort OneQubit EnQubit < Qubit .
+
+    vars N N1 N2 : Nat .
+    var V : Vector .
+    var NL : NatList .
+
+    --- empty qubit
+    op emp : -> Qubit [ctor] .
+    --- error qubit
+    op errQ : -> Qubit [ctor] .
+    op (q[_]:_) : NatList Vector -> Qubit .
+    op __ : Qubit Qubit -> Qubit [ctor assoc comm id: emp] .
+    mb(q[N]: V) : OneQubit .
+    mb(q[N1 N2 NL]: V) : EnQubit .
+    --- remove unnecessary qubits
+    eq (q[nil]: V) = emp .
+endfm
+
+fmod SYMBOLIC-REASONING is
+    pr QUBIT .
+
+    vars N N1 N2 N3 N4 : Nat .
+    vars M M1 M2 M3 M4 M5 P : Matrix .
+    vars NL NL1 NL2 NL3 NL4 NL5 NL6 : NatList .
+    var QS : Qubit .
+    vars C C1 C2 : Complex .
+    vars Ket Ket1 Ket2 : Ket .
+    vars V V' V1 V2 V3 : Vector .
+    vars Prob : Real .
+
+    --- buiding gate
+    op buildGate1 : Nat Matrix Nat -> Matrix .
+    op buildGate2 : Nat Matrix Nat Matrix Nat -> Matrix . 
+    op buildGate3 : Nat Matrix Nat Matrix Nat Matrix Nat -> Matrix . 
+    eq buildGate1(N1, M, N2) = I[N1] (x) M (x) I[N2] .
+    eq buildGate2(N1, M1, N2, M2, N3) = I[N1] (x) M1 (x) I[N2] (x) M2 (x) I[N3] .
+    eq buildGate3(N1, M1, N2, M2, N3, M3, N4) = I[N1] (x) M1 (x) I[N2] (x) M2 (x) I[N3] (x) M3 (x) I[N4] .
+
+    --- applying hadmard gate
+    op _.H(_) : Qubit Nat -> Qubit .
+    ceq ((q[NL1 N NL2]: V) QS).H(N) = (q[NL1 N NL2]: M x V) QS
+    if M := buildGate1(size(NL1), H, size(NL2)) .
+
+    --- applying I gate
+    op _.I(_) : Qubit Nat -> Qubit .
+    eq (QS).I(N) = QS .
+
+    --- applying X gate
+    op _.X(_) : Qubit Nat -> Qubit .
+    ceq ((q[NL1 N NL2]: V) QS).X(N) = (q[NL1 N NL2]: M x V) QS
+    if M := buildGate1(size(NL1), X, size(NL2)) .
+
+    --- applying Y gate
+    op _.Y(_) : Qubit Nat -> Qubit .
+    ceq ((q[NL1 N NL2]: V) QS).Y(N) = (q[NL1 N NL2]: M x V) QS
+    if M := buildGate1(size(NL1), Y, size(NL2)) .
+
+    --- applying Z gate
+    op _.Z(_) : Qubit Nat -> Qubit .
+    ceq ((q[NL1 N NL2]: V) QS).Z(N) = (q[NL1 N NL2]: M x V) QS
+    if M := buildGate1(size(NL1), Z, size(NL2)) .
+
+    --- applying S gate
+    op _.S(_) : Qubit Nat -> Qubit .
+    ceq ((q[NL1 N NL2]: V) QS).S(N) = (q[NL1 N NL2]: M x V) QS
+    if M := buildGate1(size(NL1), S, size(NL2)) .
+
+    --- applying T gate
+    op _.T(_) : Qubit Nat -> Qubit .
+    ceq ((q[NL1 N NL2]: V) QS).T(N) = (q[NL1 N NL2]: M x V) QS
+    if M := buildGate1(size(NL1), T, size(NL2)) .
+
+    --- applying CX gate
+    --- CX = B0(x)I + B3(x)X
+    op _.CX(_,_) : Qubit Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) QS).CX(N1, N2)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4]: M x V)) QS
+    if V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), X, size(NL4))
+    /\ M := M1 + M2 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V) QS).CX(N1, N2) = simplify((q[NL1 N1 NL2 N2 NL3]: M x V)) QS
+    if M1 := buildGate2(size(NL1), B0, size(NL2), I, size(NL3))
+    /\ M2 := buildGate2(size(NL1), B3, size(NL2), X, size(NL3))
+    /\ M := M1 + M2 .
+
+    ceq ((q[NL1 N2 NL2 N1 NL3]: V) QS).CX(N1, N2) = simplify((q[NL1 N2 NL2 N1 NL3]: M x V)) QS
+    if M1 := buildGate2(size(NL1), I, size(NL2), B0, size(NL3))
+    /\ M2 := buildGate2(size(NL1), X, size(NL2), B3, size(NL3))
+    /\ M := M1 + M2 .
+
+    --- applying CY gate
+    --- CY = B0(x)I + B3(x)Y
+    op _.CY(_,_) : Qubit Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) QS).CY(N1, N2)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4]: M x V)) QS
+    if V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), Y, size(NL4))
+    /\ M := M1 + M2 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V) QS).CY(N1, N2) = simplify((q[NL1 N1 NL2 N2 NL3]: M x V)) QS
+    if M1 := buildGate2(size(NL1), B0, size(NL2), I, size(NL3))
+    /\ M2 := buildGate2(size(NL1), B3, size(NL2), Y, size(NL3))
+    /\ M := M1 + M2 .
+
+    ceq ((q[NL1 N2 NL2 N1 NL3]: V) QS).CY(N1, N2) = simplify((q[NL1 N2 NL2 N1 NL3]: M x V)) QS
+    if M1 := buildGate2(size(NL1), I, size(NL2), B0, size(NL3))
+    /\ M2 := buildGate2(size(NL1), Y, size(NL2), B3, size(NL3))
+    /\ M := M1 + M2 .
+
+    --- applying CZ gate
+    --- CZ = B0(x)I + B3(x)Z
+    op _.CZ(_,_) : Qubit Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) QS).CZ(N1, N2)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4]: M x V)) QS
+    if V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), Z, size(NL4))
+    /\ M := M1 + M2 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V) QS).CZ(N1, N2) = simplify((q[NL1 N1 NL2 N2 NL3]: M x V)) QS
+    if M1 := buildGate2(size(NL1), B0, size(NL2), I, size(NL3))
+    /\ M2 := buildGate2(size(NL1), B3, size(NL2), Z, size(NL3))
+    /\ M := M1 + M2 .
+
+    ceq ((q[NL1 N2 NL2 N1 NL3]: V) QS).CZ(N1, N2) = simplify((q[NL1 N2 NL2 N1 NL3]: M x V)) QS
+    if M1 := buildGate2(size(NL1), I, size(NL2), B0, size(NL3))
+    /\ M2 := buildGate2(size(NL1), Z, size(NL2), B3, size(NL3))
+    /\ M := M1 + M2 .
+
+    --- applying SWAP gate
+    --- SWAP = CX(N1, N2) x CX(N2, N1) x CX(N1, N2)
+    --- SWAP = (B0 (x) I + B3 (x) X) x (I (x) B0 + X (x) B3) x (B0 (x) I + B3 (x) X) .
+    op _.SWAP(_,_) : Qubit Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) QS).SWAP(N1, N2)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4]: M x V)) QS
+    if V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4)) +
+             buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), X, size(NL4))
+    /\ M2 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate1(size(NL3), B0, size(NL4)) +
+             buildGate1(size(NL1), X, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4))
+    /\ M := M1 x M2 x M1 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V) QS).SWAP(N1, N2)
+    = simplify((q[NL1 N1 NL2 N2 NL3]: M x V)) QS
+    if M1 := buildGate2(size(NL1), B0, size(NL2), I, size(NL3)) +
+             buildGate2(size(NL1), B3, size(NL2), X, size(NL3))
+    /\ M2 := buildGate2(size(NL1), I, size(NL2), B0, size(NL3)) +
+             buildGate2(size(NL1), X, size(NL2), B3, size(NL3))
+    /\ M := M1 x M2 x M1 .
+
+    ceq ((q[NL1 N2 NL2 N1 NL3]: V) QS).SWAP(N1, N2)
+    = simplify((q[NL1 N2 NL2 N1 NL3]: M x V)) QS
+    if M1 := buildGate2(size(NL1), I, size(NL2), B0, size(NL3)) +
+             buildGate2(size(NL1), X, size(NL2), B3, size(NL3))
+    /\ M2 := buildGate2(size(NL1), B0, size(NL2), I, size(NL3)) +
+             buildGate2(size(NL1), B3, size(NL2), X, size(NL3))
+    /\ M := M1 x M2 x M1 .
+
+    --- applying CCX gate
+    --- CCX = B0(x)I(x)I + B3(x)B0(x)I + B3(x)B3(x)B1 + B3(x)B3(x)B2
+    --- suppose that N1 < N2 < N3
+    op _.CCX(_,_,_) : Qubit Nat Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) (q[NL5 N3 NL6]: V3) QS).CCX(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 NL5 N3 NL6]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2 (x) V3
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4)) (x)
+             buildGate1(size(NL5), I, size(NL6))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B0, size(NL4)) (x)
+             buildGate1(size(NL5), I, size(NL6))
+    /\ M3 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B1, size(NL6))
+    /\ M4 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B2, size(NL6))
+    /\ M := M1 + M2 + M3 + M4 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V1) (q[NL4 N3 NL5]: V2) QS).CCX(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 NL4 N3 NL5]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate2(size(NL1), B0, size(NL2), I, size(NL3)) (x)
+             buildGate1(size(NL4), I, size(NL5))
+    /\ M2 := buildGate2(size(NL1), B3, size(NL2), B0, size(NL3)) (x)
+             buildGate1(size(NL4), I, size(NL5))
+    /\ M3 := buildGate2(size(NL1), B3, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B1, size(NL5))
+    /\ M4 := buildGate2(size(NL1), B3, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B2, size(NL5))
+    /\ M := M1 + M2 + M3 + M4 .
+
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4 N3 NL5]: V2) QS).CCX(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 N3 NL5]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate2(size(NL3), I, size(NL4), I, size(NL5))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B0, size(NL4), I, size(NL5))
+    /\ M3 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B1, size(NL5))
+    /\ M4 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B2, size(NL5))
+    /\ M := M1 + M2 + M3 + M4 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3 N3 NL4]: V) QS).CCX(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 N3 NL4]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ M1 := buildGate3(size(NL1), B0, size(NL2), I,  size(NL3), I,  size(NL4))
+    /\ M2 := buildGate3(size(NL1), B3, size(NL2), B0, size(NL3), I,  size(NL4))
+    /\ M3 := buildGate3(size(NL1), B3, size(NL2), B3, size(NL3), B1, size(NL4))
+    /\ M4 := buildGate3(size(NL1), B3, size(NL2), B3, size(NL3), B2, size(NL4))
+    /\ M := M1 + M2 + M3 + M4 .
+
+    --- suppose that N1 > N2 > N3
+    op _.CCX(_,_,_) : Qubit Nat Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) (q[NL5 N3 NL6]: V3) QS).CCX(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 NL5 N3 NL6]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2 (x) V3
+    /\ M1 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4)) (x)
+             buildGate1(size(NL5), B0, size(NL6))
+    /\ M2 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate1(size(NL3), B0, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M3 := buildGate1(size(NL1), B1, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M4 := buildGate1(size(NL1), B2, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M := M1 + M2 + M3 + M4 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V1) (q[NL4 N3 NL5]: V2) QS).CCX(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 NL4 N3 NL5]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate2(size(NL1), I, size(NL2), I, size(NL3)) (x)
+             buildGate1(size(NL4), B0, size(NL5))
+    /\ M2 := buildGate2(size(NL1), I, size(NL2), B0, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M3 := buildGate2(size(NL1), B1, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M4 := buildGate2(size(NL1), B2, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + M4 .
+    
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4 N3 NL5]: V2) QS).CCX(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 N3 NL5]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate2(size(NL3), I, size(NL4), B0, size(NL5))
+    /\ M2 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate2(size(NL3), B0, size(NL4), B3, size(NL5))
+    /\ M3 := buildGate1(size(NL1), B1, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B3, size(NL5))
+    /\ M4 := buildGate1(size(NL1), B2, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + M4 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3 N3 NL4]: V) QS).CCX(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 N3 NL4]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ M1 := buildGate3(size(NL1), I,  size(NL2), I,  size(NL3), B0, size(NL4))
+    /\ M2 := buildGate3(size(NL1), I,  size(NL2), B0, size(NL3), B3, size(NL4))
+    /\ M3 := buildGate3(size(NL1), B1, size(NL2), B3, size(NL3), B3, size(NL4))
+    /\ M4 := buildGate3(size(NL1), B2, size(NL2), B3, size(NL3), B3, size(NL4))
+    /\ M := M1 + M2 + M3 + M4 .
+
+    --- applying CCZ gate
+    --- CCZ = B0(x)I(x)I + B3(x)B0(x)I + B3(x)B3(x)B0 + (-1) . B3(x)B3(x)B3
+    --- suppose that N1 < N2 < N3
+    op _.CCZ(_,_,_) : Qubit Nat Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) (q[NL5 N3 NL6]: V3) QS).CCZ(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 NL5 N3 NL6]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2 (x) V3
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4)) (x)
+             buildGate1(size(NL5), I, size(NL6))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B0, size(NL4)) (x)
+             buildGate1(size(NL5), I, size(NL6))
+    /\ M3 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B0, size(NL6))
+    /\ M4 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M := M1 + M2 + M3 + (-1) . M4 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V1) (q[NL4 N3 NL5]: V2) QS).CCZ(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 NL4 N3 NL5]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate2(size(NL1), B0, size(NL2), I, size(NL3)) (x)
+             buildGate1(size(NL4), I, size(NL5))
+    /\ M2 := buildGate2(size(NL1), B3, size(NL2), B0, size(NL3)) (x)
+             buildGate1(size(NL4), I, size(NL5))
+    /\ M3 := buildGate2(size(NL1), B3, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B0, size(NL5))
+    /\ M4 := buildGate2(size(NL1), B3, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + (-1) . M4 .
+
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4 N3 NL5]: V2) QS).CCZ(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 N3 NL5]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate2(size(NL3), I, size(NL4), I, size(NL5))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B0, size(NL4), I, size(NL5))
+    /\ M3 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B0, size(NL5))
+    /\ M4 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + (-1) . M4 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3 N3 NL4]: V) QS).CCZ(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 N3 NL4]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ M1 := buildGate3(size(NL1), B0, size(NL2), I,  size(NL3), I,  size(NL4))
+    /\ M2 := buildGate3(size(NL1), B3, size(NL2), B0, size(NL3), I,  size(NL4))
+    /\ M3 := buildGate3(size(NL1), B3, size(NL2), B3, size(NL3), B0, size(NL4))
+    /\ M4 := buildGate3(size(NL1), B3, size(NL2), B3, size(NL3), B3, size(NL4))
+    /\ M := M1 + M2 + M3 + (-1) . M4 .
+
+    --- suppose that N1 > N2 > N3
+    op _.CCZ(_,_,_) : Qubit Nat Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) (q[NL5 N3 NL6]: V3) QS).CCZ(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 NL5 N3 NL6]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2 (x) V3
+    /\ M1 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4)) (x)
+             buildGate1(size(NL5), B0, size(NL6))
+    /\ M2 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate1(size(NL3), B0, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M3 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M4 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M := M1 + M2 + M3 + (-1) . M4 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V1) (q[NL4 N3 NL5]: V2) QS).CCZ(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 NL4 N3 NL5]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate2(size(NL1), I, size(NL2), I, size(NL3)) (x)
+             buildGate1(size(NL4), B0, size(NL5))
+    /\ M2 := buildGate2(size(NL1), I, size(NL2), B0, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M3 := buildGate2(size(NL1), B0, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M4 := buildGate2(size(NL1), B3, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + (-1) . M4 .
+
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4 N3 NL5]: V2) QS).CCZ(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 N3 NL5]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate2(size(NL3), I, size(NL4), B0, size(NL5))
+    /\ M2 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate2(size(NL3), B0, size(NL4), B3, size(NL5))
+    /\ M3 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B3, size(NL5))
+    /\ M4 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + (-1) . M4 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3 N3 NL4]: V) QS).CCZ(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 N3 NL4]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ M1 := buildGate3(size(NL1), I,  size(NL2), I,  size(NL3), B0, size(NL4))
+    /\ M2 := buildGate3(size(NL1), I,  size(NL2), B0, size(NL3), B3, size(NL4))
+    /\ M3 := buildGate3(size(NL1), B0, size(NL2), B3, size(NL3), B3, size(NL4))
+    /\ M4 := buildGate3(size(NL1), B3, size(NL2), B3, size(NL3), B3, size(NL4))
+    /\ M := M1 + M2 + M3 + (-1) . M4 .
+
+    --- applying CSWAP gate
+    --- CSWAP = B0(x)I(x)I + B3(x)B0(x)B0 + B3(x)B1(x)B2 + B3(x)B2(x)B1 + B3(x)B3(x)B3
+    --- suppose that N1 < N2 < N3
+    op _.CSWAP(_,_,_) : Qubit Nat Nat Nat -> Qubit .
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) (q[NL5 N3 NL6]: V3) QS).CSWAP(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 NL5 N3 NL6]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2 (x) V3
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4)) (x)
+             buildGate1(size(NL5), I, size(NL6))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B0, size(NL4)) (x)
+             buildGate1(size(NL5), B0, size(NL6))
+    /\ M3 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B1, size(NL4)) (x)
+             buildGate1(size(NL5), B2, size(NL6))
+    /\ M4 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B2, size(NL4)) (x)
+             buildGate1(size(NL5), B1, size(NL6))
+    /\ M5 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M := M1 + M2 + M3 + M4 + M5 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V1) (q[NL4 N3 NL5]: V2) QS).CSWAP(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 NL4 N3 NL5]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate2(size(NL1), B0, size(NL2), I, size(NL3)) (x)
+             buildGate1(size(NL4), I, size(NL5))
+    /\ M2 := buildGate2(size(NL1), B3, size(NL2), B0, size(NL3)) (x)
+             buildGate1(size(NL4), B0, size(NL5))
+    /\ M3 := buildGate2(size(NL1), B3, size(NL2), B1, size(NL3)) (x)
+             buildGate1(size(NL4), B2, size(NL5))
+    /\ M4 := buildGate2(size(NL1), B3, size(NL2), B2, size(NL3)) (x)
+             buildGate1(size(NL4), B1, size(NL5))
+    /\ M5 := buildGate2(size(NL1), B3, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + M4 + M5 .
+
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4 N3 NL5]: V2) QS).CSWAP(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 N3 NL5]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate2(size(NL3), I, size(NL4), I, size(NL5))
+    /\ M2 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B0, size(NL4), B0, size(NL5))
+    /\ M3 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B1, size(NL4), B2, size(NL5))
+    /\ M4 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B2, size(NL4), B1, size(NL5))
+    /\ M5 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + M4 + M5 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3 N3 NL4]: V) QS).CSWAP(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 N3 NL4]: M x V)) QS
+    if N1 < N2 /\ N2 < N3
+    /\ M1 := buildGate3(size(NL1), B0, size(NL2), I,  size(NL3), I,  size(NL4))
+    /\ M2 := buildGate3(size(NL1), B3, size(NL2), B0, size(NL3), B0, size(NL4))
+    /\ M3 := buildGate3(size(NL1), B3, size(NL2), B1, size(NL3), B2, size(NL4))
+    /\ M4 := buildGate3(size(NL1), B3, size(NL2), B2, size(NL3), B1, size(NL4))
+    /\ M5 := buildGate3(size(NL1), B3, size(NL2), B3, size(NL3), B3, size(NL4))
+    /\ M := M1 + M2 + M3 + M4 + M5 .
+
+    --- suppose that N1 > N2 > N3
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4]: V2) (q[NL5 N3 NL6]: V3) QS).CSWAP(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 NL5 N3 NL6]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2 (x) V3
+    /\ M1 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate1(size(NL3), I, size(NL4)) (x)
+             buildGate1(size(NL5), B0, size(NL6))
+    /\ M2 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate1(size(NL3), B0, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M3 := buildGate1(size(NL1), B2, size(NL2)) (x)
+             buildGate1(size(NL3), B1, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M4 := buildGate1(size(NL1), B1, size(NL2)) (x)
+             buildGate1(size(NL3), B2, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M5 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate1(size(NL3), B3, size(NL4)) (x)
+             buildGate1(size(NL5), B3, size(NL6))
+    /\ M := M1 + M2 + M3 + M4 + M5 .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3]: V1) (q[NL4 N3 NL5]: V2) QS).CSWAP(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 NL4 N3 NL5]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate2(size(NL1), I, size(NL2), I, size(NL3)) (x)
+             buildGate1(size(NL4), B0, size(NL5))
+    /\ M2 := buildGate2(size(NL1), B0, size(NL2), B0, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M3 := buildGate2(size(NL1), B2, size(NL2), B1, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M4 := buildGate2(size(NL1), B1, size(NL2), B2, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M5 := buildGate2(size(NL1), B3, size(NL2), B3, size(NL3)) (x)
+             buildGate1(size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + M4 + M5 .
+
+    ceq ((q[NL1 N1 NL2]: V1) (q[NL3 N2 NL4 N3 NL5]: V2) QS).CSWAP(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 NL3 N2 NL4 N3 NL5]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ V := V1 (x) V2
+    /\ M1 := buildGate1(size(NL1), I, size(NL2)) (x)
+             buildGate2(size(NL3), I, size(NL4), B0, size(NL5))
+    /\ M2 := buildGate1(size(NL1), B0, size(NL2)) (x)
+             buildGate2(size(NL3), B0, size(NL4), B3, size(NL5))
+    /\ M3 := buildGate1(size(NL1), B2, size(NL2)) (x)
+             buildGate2(size(NL3), B1, size(NL4), B3, size(NL5))
+    /\ M4 := buildGate1(size(NL1), B1, size(NL2)) (x)
+             buildGate2(size(NL3), B2, size(NL4), B3, size(NL5))
+    /\ M5 := buildGate1(size(NL1), B3, size(NL2)) (x)
+             buildGate2(size(NL3), B3, size(NL4), B3, size(NL5))
+    /\ M := M1 + M2 + M3 + M4 + M5 
+    /\ V' := M x V .
+
+    ceq ((q[NL1 N1 NL2 N2 NL3 N3 NL4]: V) QS).CSWAP(N1, N2, N3)
+    = simplify((q[NL1 N1 NL2 N2 NL3 N3 NL4]: M x V)) QS
+    if N1 > N2 /\ N2 > N3
+    /\ M1 := buildGate3(size(NL1), I,  size(NL2), I,  size(NL3), B0, size(NL4))
+    /\ M2 := buildGate3(size(NL1), B0, size(NL2), B0, size(NL3), B3, size(NL4))
+    /\ M3 := buildGate3(size(NL1), B2, size(NL2), B1, size(NL3), B3, size(NL4))
+    /\ M4 := buildGate3(size(NL1), B1, size(NL2), B2, size(NL3), B3, size(NL4))
+    /\ M5 := buildGate3(size(NL1), B3, size(NL2), B3, size(NL3), B3, size(NL4))
+    /\ M := M1 + M2 + M3 + M4 + M5 .
+
+    --- measurement
+    sort StateProb .
+    op {qstate:_, prob:_} : Qubit Real -> StateProb .
+    op getState : StateProb -> Qubit .
+    op getProb : StateProb -> Real .
+    eq getState({qstate: QS, prob: Prob}) = QS .
+    eq getProb({qstate: QS, prob: Prob}) = Prob .
+
+    --- applying a measurement with a specific matrix at a specific position
+    op _.M(_,_) : Qubit Matrix Nat -> StateProb .
+    ceq ((q[NL1 N NL2]: V1) QS).M(P, N)
+    =   if Prob == 0 and-then V3 == O then {qstate: (simplify(q[NL1 N NL2]: V3) QS), prob: Prob}
+        else {
+            qstate: (
+                simplify(q[NL1 N NL2]: ((1 ./ Sqrt(Prob)) . V3))
+                QS
+            ), prob: Prob
+        }
+        fi
+    if V2 := ((I[size(NL1)] (x) P (x) I[size(NL2)])^+) x
+             (I[size(NL1)] (x) P (x) I[size(NL2)]) x
+             V1
+    /\ Prob := SP(V1, V2)
+    /\ V3 := (I[size(NL1)] (x) P (x) I[size(NL2)]) x V1 .
+    --- qstate: ((q[NL1 N NL2]: ((1 ./ Sqrt(Prob)) . M3)) QS), prob: Prob
+
+    --- N -> I (x) I (x) ...
+    op I[_] : Nat -> Matrix .
+    eq I[0] = nil .
+    ceq I[N] = I (x) I[sd(N, 1)] if N > 0 .
+
+    --- simplify a multiple qubit
+    op simplify : Qubit -> Qubit .
+    eq simplify(QS) = simplifyEPR(simplifyOne(QS)) .
+
+    op simplifyOne : Qubit -> Qubit .
+    eq simplifyOne((q[NL]: M) QS) = simplifyOne(QS)
+    if size(NL) > 1 then simplifyOne*(NL, (q[NL]: M)) else (q[NL]: M) fi .
+    eq simplifyOne(emp) = emp .
+
+    op simplifyOne* : NatList Qubit -> Qubit .
+    ceq simplifyOne*(N NL1, (q[NL2]: M)) = if sameKet?*(NL2, N, M, Ket) then
+        (q[N] : Ket)
+        simplifyOne*(NL1, q[rmIndex(NL2, N)]: rmQubitAt(NL2, N, M))
+    else
+        simplifyOne*(NL1, (q[NL2]: M))
+    fi
+    if Ket := firstKetAt*(NL2, N, M) .
+
+    eq simplifyOne*(nil, QS) = QS .
+
+    --- simplify the multiplication of two ERP states
+    --- [TODO] only support some specific cases
+    op simplifyEPR : Qubit -> Qubit .
+    eq simplifyEPR((q[NL]: M) QS) = simplifyEPR*((q[NL]: M)) simplifyEPR(QS) .
+    eq simplifyEPR(emp) = emp .
+
+    op simplifyEPR* : Qubit -> Qubit .
+    --- case 1
+    ceq simplifyEPR*((q[N1 N2 N3 N4]: C . |0>(x)|0>(x)|0>(x)|0> + C . |0>(x)|0>(x)|1>(x)|1> +
+                                     C . |1>(x)|1>(x)|0>(x)|0> + C . |1>(x)|1>(x)|1>(x)|1>))
+    = (q[N1 N2]: Sqrt(C) . (|0>(x)|0> + |1>(x) |1>)) (q[N3 N4]: Sqrt(C) . (|0>(x)|0> + |1>(x) |1>)) 
+    if C == 1/2 .
+    --- [todo] case 2 ...
+    --- otherwise
+    eq simplifyEPR*(QS) = QS [owise] .
+
+    --- remove an index from a natural list
+    op rmIndex : NatList Nat -> NatList .
+    eq rmIndex(N1 NL, N2) = if N1 == N2 then NL else N1 rmIndex(NL, N2) fi .
+    eq rmIndex(nil, N) = nil .
+
+    --- get a first ket at a single qubit with an index
+    op firstKetAt : Qubit Nat -> Ket .
+    eq firstKetAt((q[NL1 N NL2]: M), N) = firstKetAt*(NL1 N NL2, N, M) .
+
+    op firstKetAt* : NatList Nat Matrix -> Ket .
+    eq firstKetAt*(NL, N, C . M) = firstKetAt**(NL, N, M) .
+    eq firstKetAt*(NL, N, C . M1 + M2) = firstKetAt**(NL, N, M1) .
+    eq firstKetAt*(NL, N, M) = firstKetAt**(NL, N, M) [owise] .
+
+    op firstKetAt** : NatList Nat Matrix -> Ket .
+    eq firstKetAt**(N1 NL, N2, Ket (x) M) = if N1 == N2 then Ket else firstKetAt**(NL, N2, M) fi .
+    eq firstKetAt**(N, N, Ket) = Ket .
+
+    --- checking if a single qubit is solely |0> or |1> in a multiple qubits
+    op sameKet? : Qubit Nat Ket -> Bool .
+    eq sameKet?((q[NL1 N NL2]: M), N, Ket) = sameKet?*(NL1 N NL2, N, M, Ket) .
+
+    op sameKet?* : NatList Nat Matrix Ket -> Bool .
+    eq sameKet?*(NL, N, C . M, Ket) = sameKet?*(NL, N, M, Ket) .
+    eq sameKet?*(NL, N, C . M1 + M2, Ket) = sameKet?*(NL, N, C . M1, Ket) and sameKet?*(NL, N, M2, Ket) .
+    eq sameKet?*(NL, N, M, Ket) = sameKet?**(NL, N, M, Ket) [owise] .
+
+    op sameKet?** : NatList Nat Matrix Ket -> Bool .
+    eq sameKet?**(N1 NL, N2, Ket1 (x) M, Ket2) = if N1 == N2 then Ket1 == Ket2 else sameKet?**(NL, N2, M, Ket2) fi .
+    eq sameKet?**(N, N, Ket1, Ket2) = Ket1 == Ket2 .
+
+    --- qubit information
+    op qubitAt : Qubit NatList -> Matrix .
+    ceq qubitAt((q[NL]: M) QS, NL) = M if NL =/= nil .
+    eq qubitAt(QS, NL) = errM [owise] .
+
+    --- remove qubit at a index after a measurement
+    op rmQubitAt : NatList Nat Matrix -> Matrix .
+    eq rmQubitAt(NL, N, C . M) = C . rmQubitAt(NL, N, M) .
+    eq rmQubitAt(NL, N, C . M1 + M2) = rmQubitAt(NL, N, C . M1) + rmQubitAt(NL, N, M2) .
+    eq rmQubitAt(NL, N, M) = rmQubitAt*(NL, N, M) [owise] .
+
+    op rmQubitAt* : NatList Nat Matrix -> Matrix .
+    eq rmQubitAt*(N1 NL, N2, Ket (x) M) = if N1 == N2 then M else Ket (x) rmQubitAt*(NL, N2, M) fi .
+    eq rmQubitAt*(N, N, Ket) = nil .
+endfm

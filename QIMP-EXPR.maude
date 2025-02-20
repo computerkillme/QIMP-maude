@@ -1,0 +1,54 @@
+fmod QIMP-EXPR is
+  pr CLASSICAL-STATE .
+  pr INT .
+  pr BOOL .
+  pr QID .
+
+  sorts AExp BExp .
+
+  --- 算术表达式运算符
+  op _plusA_  : AExp AExp -> AExp .
+  op _minusA_ : AExp AExp -> AExp .
+  op _timesA_ : AExp AExp -> AExp .
+  op var      : Qid -> AExp .
+  op const    : Int -> AExp .
+
+  --- 布尔表达式运算符
+  op _eqA_    : AExp AExp -> BExp .
+  op _ltA_    : AExp AExp -> BExp .
+  op _andB_   : BExp BExp -> BExp [ctor] .
+  op _orB_    : BExp BExp -> BExp [ctor] .
+  op notB     : BExp -> BExp [ctor] .
+  op bconst   : Bool -> BExp [ctor] .
+
+  --- 获取经典状态值
+  op getVal   : CState Qid -> Int .
+
+  --- 评估运算符
+  op evalAExp : AExp CState -> Int .
+  op evalBExp : BExp CState -> Bool .
+
+  --- 变量声明
+  vars A1 A2 : AExp .
+  vars B1 B2 : BExp .
+  var  BB    : Bool .  ---- 新增：供 bconst(...) 使用
+  vars X     : Qid .
+  vars N     : Int .
+  var  CS    : CState .
+
+  --- 算术表达式求值规则
+  eq evalAExp(const(N), CS)     = N .
+  eq evalAExp(var(X), CS)       = getVal(CS, X) .
+  eq evalAExp(A1 plusA A2, CS)  = evalAExp(A1, CS) + evalAExp(A2, CS) .
+  eq evalAExp(A1 minusA A2, CS) = evalAExp(A1, CS) - evalAExp(A2, CS) .
+  eq evalAExp(A1 timesA A2, CS) = evalAExp(A1, CS) * evalAExp(A2, CS) .
+
+  --- 布尔表达式求值规则
+  eq evalBExp(bconst(BB), CS)  = BB .
+  eq evalBExp(A1 eqA A2, CS)   = evalAExp(A1, CS) == evalAExp(A2, CS) .
+  eq evalBExp(A1 ltA A2, CS)   = evalAExp(A1, CS) < evalAExp(A2, CS) .
+  eq evalBExp(B1 andB B2, CS)  = evalBExp(B1, CS) and evalBExp(B2, CS) .
+  eq evalBExp(B1 orB B2, CS)   = evalBExp(B1, CS) or evalBExp(B2, CS) .
+  eq evalBExp(notB(B1), CS)    = not(evalBExp(B1, CS)) .
+
+endfm

@@ -1,0 +1,47 @@
+mod QIMP-QUBIT is
+  pr QUBIT .
+  pr COMPLEX .
+  pr MATRIX .
+  pr SYMBOLIC-REASONING .
+  pr NAT .
+  pr QID .
+
+  sorts QState .
+  subsort Qubit < QState .
+
+  op qidToNat : Qid -> Nat .
+  ops q1 q2 q3 : -> Qid [ctor] .
+  eq qidToNat(q1) = 0 .
+  eq qidToNat(q2) = 1 .
+  eq qidToNat(q3) = 2 .
+
+  op emptyQState : -> Qubit [ctor] .
+  eq emptyQState = emp .
+
+  op storeQubit : Qid Vector Qubit -> Qubit .
+  vars X : Qid .
+  var V : Vector .
+  var QS : Qubit .
+  eq storeQubit(X, V, QS) = (q [qidToNat(X)]: V) QS .
+
+  op updateQState : Qubit Qid Vector -> Qubit .
+  vars VOld VNew : Vector .
+  vars XOld : Qid .
+  vars QSOld : Qubit .
+  var N : Nat .
+
+  ceq updateQState((q[N]: VOld) QSOld, XOld, VNew) = (q[N]: VNew) QSOld
+    if N == qidToNat(XOld) /\ VOld =/= VNew .
+
+  eq updateQState(emp, XOld, VOld) = (q[qidToNat(XOld)]: VOld) .
+
+  op qubitAt : Qubit Qid -> Vector .
+  vars QBitState : Qubit .
+  var XQuery : Qid .
+  var VResult : Vector .
+
+
+  ceq qubitAt((q[N]: VResult) QBitState, XQuery) = VResult if N == qidToNat(XQuery) .
+  eq qubitAt(QBitState, XQuery) = |0> [owise] .
+
+endm

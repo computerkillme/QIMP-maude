@@ -1,0 +1,38 @@
+mod QIMP-COMMAND is
+  protecting BOOL .
+  protecting QIMP-HYBRID .
+  protecting QIMP-MEASUREMENT .
+
+  sorts Command Program .
+  subsort Command < Program .
+
+  op skip : -> Command [ctor] .
+  op _;_ : Command Command -> Command [assoc ctor] .
+  op while_do_od : Bool Command -> Command [ctor] .
+  op _:=_ : Qid Int -> Command [ctor] .
+  op _:=Q_ : Qid Matrix -> Command [ctor] .
+  op _:=measure_ : Qid Qid -> Command [ctor] .
+  op program : Command -> Program [ctor] .
+  op execute : Program HybridState -> HybridState [ctor] .
+
+  vars HS : HybridState .
+  var  B : Bool .
+  vars C1 C2 : Command .
+  vars X Y : Qid .
+  var  N : Int .
+  var  M : Matrix .
+  var  SP : StateProb .
+
+  eq [exec-skip] : execute(program(skip), HS) = HS .
+  eq [exec-seq] : execute(program(C1 ; C2), HS) = execute(program(C2), execute(program(C1), HS)) .
+  eq [exec-if] : execute(program(if B then C1 else C2 fi), HS) = if B then execute(program(C1), HS) else execute(program(C2), HS) fi .
+  ceq [exec-while] : execute(program(while_do_od(B, C1)), HS) = (if B then execute(program(C1 ; while_do_od(B, C1)), HS) else HS fi) if true .
+  eq [exec-classical] : execute(program(X := N), HS) = hybridState(updateCState(getCState(HS), X, N), getQState(HS)) .
+  eq [exec-quantum] : execute(program(X :=Q M), HS) = hybridState(getCState(HS), updateQState(getQState(HS), X, M x qubitAt(getQState(HS), X))) .
+
+  crl [exec-measure] : execute(program(X :=measure Y), HS) => updateCStateWithMeasurement(HS, X, measureBit(HS, Y, 0)) if true .
+
+  op initCState : -> CState [ctor] .
+  op initQState : -> QState [ctor] .
+
+endm

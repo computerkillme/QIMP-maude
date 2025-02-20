@@ -1,0 +1,52 @@
+mod QIMP-TELEPORTATION is
+  protecting QIMP-COMMAND .
+  protecting QIMP-OP .
+  protecting QIMP-EXPR .
+  protecting QIMP-HYBRID .
+
+  vars HS : HybridState .
+  var X Y : Qid .
+
+  --- 新增命令 cnot(X, Y)
+  op cnot : Qid Qid -> Command [ctor] .
+  eq [exec-cnot] : execute(program(cnot(X, Y)), HS)
+    = hybridState(
+        getCState(HS),
+        applyCNOT(getQState(HS), X, Y)
+      ) .
+
+  --- 新增命令 h(X)
+  op h : Qid -> Command [ctor] .
+  eq [exec-h] : execute(program(h(X)), HS)
+    = hybridState(
+        getCState(HS),
+        applyH(getQState(HS), X)
+      ) .
+
+  --- 声明 c1, c2 作为测量结果的经典变量
+  op c1 c2 : -> Qid [ctor] .
+
+  --- 定义 teleport(q1, q2, q3) 复合命令
+  op teleport : Qid Qid Qid -> Command [ctor] .
+
+  eq teleport(q1, q2, q3) =
+    (
+      --- 1) 制备 EPR (q2, q3)
+      h(q2)
+    ; cnot(q2, q3)
+
+      --- 2) 让 q1 与 q2 纠缠
+    ; cnot(q1, q2)
+    ; h(q1)
+
+      --- 3) 测量 q1, q2 并存入 c1, c2
+    ; (c1 :=measure q1)
+    ; (c2 :=measure q2)
+
+      --- 4) 若 c2 == 1 则对 q3 施加 X
+    ; if (var(c2) eqA const(1)) then (q3 :=Q X) else skip fi
+
+      --- 5) 若 c1 == 1 则对 q3 施加 Z
+    ; if (var(c1) eqA const(1)) then (q3 :=Q Z) else skip fi
+    ) .
+endm

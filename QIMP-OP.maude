@@ -1,0 +1,48 @@
+mod QIMP-OP is
+  protecting QIMP-QUBIT .
+  protecting MATRIX .
+  protecting SYMBOLIC-REASONING .
+
+  var QS : QState .
+  vars Qv Qv1 Qv2 : Qid .
+  vars i j : Nat .
+  var M : Matrix .
+  var Prob : Real .
+
+  --- 施加单比特门操作
+  op applyGate : QState Qid Matrix -> QState .
+  eq applyGate(QS, Qv, M) =
+    updateQState(QS, Qv, (M x qubitAt(QS, Qv))) .
+
+  --- 单比特门定义
+  op applyX : QState Qid -> QState .
+  op applyY : QState Qid -> QState .
+  op applyZ : QState Qid -> QState .
+  op applyH : QState Qid -> QState .
+  op applyS : QState Qid -> QState .
+  op applyT : QState Qid -> QState .
+
+  eq applyX(QS, Qv) = applyGate(QS, Qv, X) .
+  eq applyY(QS, Qv) = applyGate(QS, Qv, Y) .
+  eq applyZ(QS, Qv) = applyGate(QS, Qv, Z) .
+  eq applyH(QS, Qv) = applyGate(QS, Qv, H) .
+  eq applyS(QS, Qv) = applyGate(QS, Qv, S) .
+  eq applyT(QS, Qv) = applyGate(QS, Qv, T) .
+
+  --- 施加双比特门操作
+  op applyTwoQubitGate : QState Qid Qid Matrix -> QState .
+  eq applyTwoQubitGate(QS, Qv1, Qv2, M) =
+    updateQState(
+      updateQState(QS, Qv1, M x qubitAt(QS, Qv1)), 
+      Qv2, M x qubitAt(QS, Qv2)
+    ) .
+
+  --- 多比特门定义
+  op applyCNOT : QState Qid Qid -> QState .
+  eq applyCNOT(QS, Qv1, Qv2) = applyTwoQubitGate(QS, Qv1, Qv2, CX) .
+
+  op applySWAP : QState Qid Qid -> QState .
+  eq applySWAP(QS, Qv1, Qv2) = applyTwoQubitGate(QS, Qv1, Qv2, SWAP) .
+
+
+endm

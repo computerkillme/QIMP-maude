@@ -1,0 +1,144 @@
+in symbolic-reasoning.maude
+
+fmod BIT is
+    pr NAT .
+    pr MAP{Nat,Nat} * (
+        sort Entry{Nat,Nat} to EntryBit,
+        sort Map{Nat,Nat} to BitMap
+    ) .
+    sort Bit .
+    --- classical bit at index i
+    op c[_] : Nat -> Bit .
+endfm
+
+fmod ACTION is
+    pr NAT .
+    sort Action .
+    op I`(_`) : Nat -> Action .
+    op X`(_`) : Nat -> Action .
+    op Y`(_`) : Nat -> Action .
+    op Z`(_`) : Nat -> Action .
+    op H`(_`) : Nat -> Action .
+    op S`(_`) : Nat -> Action .
+    op T`(_`) : Nat -> Action .
+    op CX`(_,_`) : Nat Nat -> Action .
+    op CY`(_,_`) : Nat Nat -> Action .
+    op CZ`(_,_`) : Nat Nat -> Action .
+    op SWAP`(_,_`) : Nat Nat -> Action .
+    op CCX`(_,_,_`) : Nat Nat Nat -> Action .
+    op CCZ`(_,_,_`) : Nat Nat Nat -> Action .
+    op CSWAP`(_,_,_`) : Nat Nat Nat -> Action .
+    op M`(_`) : Nat -> Action .
+endfm
+
+view Action from TRIV to ACTION is
+    sort Elt to Action .
+endv
+
+fmod ACTION-LIST is
+    pr BIT .
+    pr LIST{Action} * (
+        sort NeList{Action} to NeActionList,
+        sort List{Action} to ActionList
+    ) .
+    op _==_?_ : Bit Nat ActionList -> Action .
+    op _==_?_:_ : Bit Nat ActionList ActionList -> Action .
+endfm
+
+fmod SOUP {D :: TRIV} is
+    sort Soup{D} .
+    subsort D$Elt < Soup{D} .
+    op empty : -> Soup{D} [ctor] .
+    op __ : Soup{D} Soup{D} -> Soup{D} [ctor assoc comm id: empty] .
+endfm
+
+fmod OCOMP is
+    pr SYMBOLIC-REASONING .
+    pr ACTION-LIST .
+    pr BOOL .
+    sort OComp .
+    op (qstate:_) : Qubit -> OComp [ctor] .
+    op (bits:_) : BitMap -> OComp [ctor] .
+    op (prob:_) :  Complex -> OComp [ctor] .
+    op (actions:_) : ActionList -> OComp [ctor] .
+    op (isEnd:_) : Bool -> OComp [ctor] .
+endfm
+
+view OComp from TRIV to OCOMP is
+    sort Elt to OComp .
+endv
+
+fmod CONFIG is
+    pr SOUP{OComp} .
+    sort Config .
+    op {_} : Soup{OComp} -> Config [ctor] .
+
+    op qstate : Config -> Qubit .
+    eq qstate({(qstate: Q:Qubit) OCs:Soup{OComp}}) = Q:Qubit .
+endfm
+
+mod CIRCUIT is
+    pr CONFIG .
+
+    vars AL AL' : ActionList .
+    vars Q Q' QS : Qubit .
+    vars OCs : Soup{OComp} .
+    vars N N1 N2 : Nat .
+    vars Prob Prob' : Complex .
+    vars B : Bool .
+    vars BM : BitMap .
+
+    rl [I] : {(qstate: Q) (actions: (I(N) AL)) OCs}
+    => {(qstate: Q) (actions: AL) OCs} .
+
+    crl [X] : {(qstate: Q) (actions: (X(N) AL)) OCs}
+    => {(qstate: Q') (actions: AL) OCs}
+    if Q' := (Q).X(N) .
+
+    crl [Y] : {(qstate: Q) (actions: (Y(N) AL)) OCs}
+    => {(qstate: Q') (actions: AL) OCs}
+    if Q' := (Q).Y(N) .
+
+    crl [Z] : {(qstate: Q) (actions: (Z(N) AL)) OCs}
+    => {(qstate: Q') (actions: AL) OCs}
+    if Q' := (Q).Z(N) .
+
+    crl [H] : {(qstate: Q) (actions: (H(N) AL)) OCs}
+    => {(qstate: Q') (actions: AL) OCs}
+    if Q' := (Q).H(N) .
+    
+    crl [S] : {(qstate: Q) (actions: (S(N) AL)) OCs}
+    => {(qstate: Q') (actions: AL) OCs}
+    if Q' := (Q).S(N) .
+
+    crl [T] : {(qstate: Q) (actions: (T(N) AL)) OCs}
+    => {(qstate: Q') (actions: AL) OCs}
+    if Q' := (Q).T(N) .
+
+    crl [CX] : {(qstate: Q) (actions: (CX(N1, N2) AL)) OCs}
+    => {(qstate: Q') (actions: AL) OCs}
+    if Q' := (Q).CX(N1, N2).
+
+    crl [SWAP] : {(qstate: Q) (actions: (SWAP(N1, N2) AL)) OCs}
+    => {(qstate: Q') (actions: AL) OCs}
+    if Q' := (Q).SWAP(N1, N2).
+
+    --- measurement with z-basis states (the standard basis)
+    crl [M0] : {(qstate: Q) (actions: (M(N) AL)) (prob: Prob) (bits: BM) OCs}
+    => {(qstate: Q') (actions: AL) (prob: (Prob .* Prob')) (bits: insert(N, 0, BM)) OCs}
+    if {qstate: Q', prob: Prob'} := (Q).M(P0, N) .
+
+    crl [M1] : {(qstate: Q) (actions: (M(N) AL)) (prob: Prob) (bits: BM) OCs}
+    => {(qstate: Q') (actions: AL) (prob: (Prob .* Prob')) (bits: insert(N, 1, BM)) OCs}
+    if {qstate: Q', prob: Prob'} := (Q).M(P1, N) .
+
+    rl [cif] : {(qstate: Q) (bits: ((N |-> N1), BM)) (actions: ((c[N] == N2 ? AL') AL)) OCs}
+    => {(qstate: Q) (bits: ((N |-> N1), BM))
+        (actions: ((if (N1 == N2) then AL' else nil fi) AL)) OCs} .
+
+    rl [end] : {(actions: nil) (isEnd: false) OCs}
+    => {(actions: nil) (isEnd: true) OCs} .
+
+    rl [stutter]: {(isEnd: true) OCs} => {(isEnd: true) OCs} .
+endm
+

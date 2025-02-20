@@ -1,0 +1,34 @@
+mod QIMP-MEASUREMENT is
+  protecting QIMP-HYBRID .
+  protecting SYMBOLIC-REASONING .
+  protecting CLASSICAL-STATE .
+  protecting MATRIX .
+
+  vars CS : CState .
+  var QS : QState .
+  vars X : Qid .
+  vars i : Nat .
+  var P : Matrix .
+  var SP : StateProb .
+  var Prob : Real .
+
+  --- **测量矩阵 P0 / P1**
+  op P0 : -> Matrix [ctor] .
+  op P1 : -> Matrix [ctor] .
+  eq P0 = |0> x <0| .
+  eq P1 = |1> x <1| .
+
+  --- **计算测量状态，不改变经典存储**
+  op measureStateProb : QState Matrix Nat -> StateProb .
+  eq measureStateProb(QS, P, i) = QS .M(P, i) .
+
+  --- **执行测量，返回测量概率和量子状态**
+  op measureBit : HybridState Qid Nat -> StateProb .
+  eq measureBit(hybridState(CS, QS), X, i) = measureStateProb(QS, P0, i) .
+
+  --- **存储测量值到经典存储**
+  op updateCStateWithMeasurement : HybridState Qid StateProb -> HybridState .
+  eq updateCStateWithMeasurement(hybridState(CS, QS), X, SP) =
+      hybridState(store(X, if getProb(SP) > 0 then 1 else 0 fi, CS), getState(SP)) .
+
+endm
